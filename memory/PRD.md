@@ -46,11 +46,11 @@ Build MVP v0: a "Taste Fit" Affective Form widget that appears on Shopify PDP pa
 - Seeded admin + viewer accounts
 
 ### Frontend (React)
-- Demo PDP with 3 Unchained Coffee products (Papayo Natural, Geisha Honey, Red Bourbon)
+- **Collection Page** (/demo/collection): 6 product cards with score badges, rank labels (TOP PICK, #2 MATCH, #3 MATCH), mini sensory bars, per-attribute breakdown bars. Process/Roast filters, sort by Best Match/Price/Default. Personalized hero "Best Matches For Your Palate" when profile exists, default "Our Coffees" CTA when not.
+- Demo PDP with 6 Unchained Coffee products (Papayo Natural, Geisha Honey, Red Bourbon, Caturra Washed, Tabi Anaerobic, Castillo Dark)
 - TasteFit Widget with mode toggle, 6 attribute scales, consent toggles
 - "I'm drinking it now" mode: overall liking + standout tags + fit tags + notes
-- **Taste-Fit Score Card**: Animated circular ring with %, expandable per-attribute breakdown with delta arrows, positioned between sensory profile and price on PDP
-- Score shows "Discover your Taste Fit" CTA when no profile exists
+- **Taste-Fit Score Card**: Animated circular ring with %, expandable per-attribute breakdown with delta arrows
 - Score auto-refreshes after widget submission
 - Admin: Login, Products, Product Detail (with Recharts distributions), Funnel, Segments, Privacy
 - Responsive design with bottom drawer for mobile (includes score card)
