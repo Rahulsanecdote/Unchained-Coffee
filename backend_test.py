@@ -10,7 +10,7 @@ from datetime import datetime
 
 
 class TasteFitAPITester:
-    def __init__(self, base_url="https://402cedbd-e175-4199-9a28-4fff2f6d6800.preview.emergentagent.com"):
+    def __init__(self, base_url="https://flavor-match-11.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_id = str(uuid.uuid4())
         self.admin_token = None
@@ -581,6 +581,68 @@ class TasteFitAPITester:
             self.log_test("Taste-Fit Batch (No Profile)", False, str(e))
             return False
 
+    def test_collection_batch_all_products(self):
+        """Test batch taste-fit for all 6 collection products"""
+        try:
+            # Ensure profile exists first
+            self.test_create_profile()
+            
+            # All 6 products from mockProducts.js
+            payload = {
+                "session_id": self.session_id,
+                "products": [
+                    {
+                        "product_id": "papayo-natural-8001",
+                        "sensory": {"aroma": 7, "flavor": 8, "aftertaste": 7, "acidity": 6, "sweetness": 8, "mouthfeel": 7}
+                    },
+                    {
+                        "product_id": "geisha-honey-8002", 
+                        "sensory": {"aroma": 8, "flavor": 9, "aftertaste": 8, "acidity": 7, "sweetness": 8, "mouthfeel": 6}
+                    },
+                    {
+                        "product_id": "red-bourbon-8003",
+                        "sensory": {"aroma": 7, "flavor": 7, "aftertaste": 7, "acidity": 5, "sweetness": 7, "mouthfeel": 8}
+                    },
+                    {
+                        "product_id": "caturra-washed-8004",
+                        "sensory": {"aroma": 8, "flavor": 7, "aftertaste": 6, "acidity": 8, "sweetness": 6, "mouthfeel": 5}
+                    },
+                    {
+                        "product_id": "tabi-anaerobic-8005",
+                        "sensory": {"aroma": 9, "flavor": 9, "aftertaste": 8, "acidity": 5, "sweetness": 7, "mouthfeel": 8}
+                    },
+                    {
+                        "product_id": "castillo-dark-8006",
+                        "sensory": {"aroma": 6, "flavor": 6, "aftertaste": 8, "acidity": 3, "sweetness": 5, "mouthfeel": 9}
+                    }
+                ]
+            }
+            response = requests.post(
+                f"{self.base_url}/api/affective/taste-fit/batch",
+                json=payload,
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (
+                    data.get("profile_exists") == True and
+                    "scores" in data and
+                    isinstance(data["scores"], list) and
+                    len(data["scores"]) == 6 and
+                    all("product_id" in score and "score" in score and "label" in score and "breakdown" in score
+                        for score in data["scores"])
+                )
+                if success:
+                    # Verify scores are properly ranked
+                    scores = [s["score"] for s in data["scores"]]
+                    print(f"   Collection scores: {scores}")
+            self.log_test("Collection Batch All 6 Products", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Collection Batch All 6 Products", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend tests"""
         print(f"🚀 Starting Unchained Coffee Taste Fit API Tests")
@@ -625,6 +687,9 @@ class TasteFitAPITester:
         self.test_taste_fit_score_no_profile()
         self.test_taste_fit_batch_with_profile()
         self.test_taste_fit_batch_no_profile()
+        
+        # NEW: Collection page specific tests
+        self.test_collection_batch_all_products()
 
         # Results
         print("=" * 60)

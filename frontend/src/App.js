@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import DemoCollection from './pages/DemoCollection';
 import DemoPDP from './pages/DemoPDP';
 import AdminLogin from './pages/AdminLogin';
 import AdminProducts from './pages/AdminProducts';
@@ -12,7 +13,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/demo/pdp/papayo-natural" replace />} />
+        <Route path="/" element={<Navigate to="/demo/collection" replace />} />
+        <Route path="/demo/collection" element={<DemoCollection />} />
         <Route path="/demo/pdp/:productHandle" element={<DemoPDP />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Navigate to="/admin/products" replace />} />

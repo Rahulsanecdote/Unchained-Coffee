@@ -81,6 +81,7 @@ export default function DemoPDP() {
           <span className="font-heading font-semibold text-[#3E2723] text-lg">Unchained Coffee</span>
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-500">
+          <Link to="/demo/collection" className="text-xs text-[#3E2723] font-medium hover:text-[#8D6E63] transition-colors" data-testid="shop-link">Shop</Link>
           <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium uppercase">Demo Mode</span>
           <Link to="/admin/login" className="text-xs text-[#8D6E63] hover:underline" data-testid="admin-link">Admin</Link>
         </div>
@@ -194,14 +195,9 @@ export default function DemoPDP() {
 
         <div className="mt-16 text-center text-xs text-gray-400">
           <p>Demo PDP for Shopify integration preview</p>
-          <div className="flex justify-center gap-4 mt-2">
-            {Object.values(MOCK_PRODUCTS).map(p => (
-              <Link key={p.handle} to={`/demo/pdp/${p.handle}`}
-                className={`hover:text-[#8D6E63] transition-colors ${p.handle === productHandle ? 'text-[#8D6E63] font-medium' : ''}`}>
-                {p.title}
-              </Link>
-            ))}
-          </div>
+          <Link to="/demo/collection" className="inline-flex items-center gap-1 mt-2 text-[#8D6E63] hover:underline" data-testid="back-to-shop">
+            View all coffees
+          </Link>
         </div>
       </div>
 
