@@ -643,6 +643,352 @@ class TasteFitAPITester:
             self.log_test("Collection Batch All 6 Products", False, str(e))
             return False
 
+    # ============================================================
+    # NEW: QUIZ ENDPOINTS TESTS
+    # ============================================================
+
+    def test_submit_quiz(self):
+        """Test submitting quiz profile"""
+        try:
+            payload = {
+                "session_id": self.session_id,
+                "acidity_pref": 3.5,
+                "bitterness_pref": 2.0,
+                "body_pref": "balanced",
+                "roast_pref": "medium",
+                "budget_band": "20_30",
+                "brew_methods": ["pour_over", "espresso"],
+                "drink_style": "black",
+                "flavor_love_tags": ["chocolate", "caramel", "nutty"],
+                "consent_analytics": True,
+                "consent_marketing": False
+            }
+            response = requests.post(
+                f"{self.base_url}/api/quiz/submit",
+                json=payload,
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = data.get("status") == "ok"
+            self.log_test("Submit Quiz Profile", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Submit Quiz Profile", False, str(e))
+            return False
+
+    def test_get_quiz_profile(self):
+        """Test getting quiz profile"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/api/quiz/profile?session_id={self.session_id}",
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = "profile" in data and data["profile"] is not None
+                if success:
+                    profile = data["profile"]
+                    # Verify key fields are present
+                    required_fields = ["acidity_pref", "bitterness_pref", "body_pref", "roast_pref", "budget_band"]
+                    success = all(field in profile for field in required_fields)
+            self.log_test("Get Quiz Profile", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Get Quiz Profile", False, str(e))
+            return False
+
+    def test_quiz_validation(self):
+        """Test quiz validation with invalid data"""
+        try:
+            payload = {
+                "session_id": self.session_id,
+                "acidity_pref": 6.0,  # Invalid: should be 1-5
+                "bitterness_pref": 2.0,
+                "body_pref": "invalid_body",  # Invalid body preference
+                "roast_pref": "medium",
+                "budget_band": "invalid_budget",  # Invalid budget band
+                "brew_methods": ["pour_over"],
+                "drink_style": "black",
+                "flavor_love_tags": ["chocolate"]
+            }
+            response = requests.post(
+                f"{self.base_url}/api/quiz/submit",
+                json=payload,
+                timeout=10
+            )
+            success = response.status_code == 422  # Validation error expected
+            self.log_test("Quiz Validation (Invalid Data)", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Quiz Validation (Invalid Data)", False, str(e))
+            return False
+
+    # ============================================================
+    # NEW: RECOMMENDATIONS ENDPOINT TESTS
+    # ============================================================
+
+    def test_recommendations_with_quiz(self):
+        """Test recommendations endpoint when quiz profile exists"""
+        try:
+            # Ensure quiz profile exists first
+            self.test_submit_quiz()
+            
+            payload = {
+                "session_id": self.session_id,
+                "limit": 6
+            }
+            response = requests.post(
+                f"{self.base_url}/api/recommendations",
+                json=payload,
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (
+                    data.get("mode") == "personalized" and
+                    data.get("model_version") == "rules_v1" and
+                    data.get("quiz_completed") == True and
+                    "recommendations" in data and
+                    isinstance(data["recommendations"], list) and
+                    len(data["recommendations"]) > 0
+                )
+                if success:
+                    # Verify recommendation structure
+                    rec = data["recommendations"][0]
+                    success = (
+                        "lot" in rec and
+                        "score" in rec and
+                        "explanation" in rec and
+                        isinstance(rec["explanation"], list) and
+                        len(rec["explanation"]) > 0
+                    )
+                    if success:
+                        print(f"   First recommendation score: {rec['score']}")
+                        print(f"   First explanation: {rec['explanation'][0]}")
+            self.log_test("Recommendations (With Quiz)", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Recommendations (With Quiz)", False, str(e))
+            return False
+
+    def test_recommendations_cold_start(self):
+        """Test recommendations endpoint when no quiz profile exists (cold start)"""
+        try:
+            # Use a different session ID without quiz profile
+            new_session_id = str(uuid.uuid4())
+            payload = {
+                "session_id": new_session_id,
+                "limit": 6
+            }
+            response = requests.post(
+                f"{self.base_url}/api/recommendations",
+                json=payload,
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (
+                    data.get("mode") == "editors_picks" and
+                    data.get("model_version") == "rules_v1" and
+                    data.get("quiz_completed") == False and
+                    "recommendations" in data and
+                    isinstance(data["recommendations"], list) and
+                    len(data["recommendations"]) > 0
+                )
+                if success:
+                    # Verify editor's picks structure
+                    rec = data["recommendations"][0]
+                    success = (
+                        "lot" in rec and
+                        rec.get("score") is None and  # No score for editor's picks
+                        "explanation" in rec and
+                        isinstance(rec["explanation"], list)
+                    )
+            self.log_test("Recommendations (Cold Start)", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Recommendations (Cold Start)", False, str(e))
+            return False
+
+    def test_recommendations_budget_filter(self):
+        """Test recommendations with budget filtering"""
+        try:
+            # Create quiz with under_15 budget to test hard filtering
+            budget_session_id = str(uuid.uuid4())
+            quiz_payload = {
+                "session_id": budget_session_id,
+                "acidity_pref": 3.0,
+                "bitterness_pref": 2.0,
+                "body_pref": "balanced",
+                "roast_pref": "medium",
+                "budget_band": "under_15",  # Max $15
+                "brew_methods": ["pour_over"],
+                "drink_style": "black",
+                "flavor_love_tags": ["chocolate"],
+                "consent_analytics": True,
+                "consent_marketing": False
+            }
+            
+            # Submit quiz first
+            quiz_response = requests.post(
+                f"{self.base_url}/api/quiz/submit",
+                json=quiz_payload,
+                timeout=10
+            )
+            
+            if quiz_response.status_code != 200:
+                self.log_test("Recommendations (Budget Filter)", False, "Failed to create quiz profile")
+                return False
+            
+            # Get recommendations
+            rec_payload = {
+                "session_id": budget_session_id,
+                "limit": 6
+            }
+            response = requests.post(
+                f"{self.base_url}/api/recommendations",
+                json=rec_payload,
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (
+                    data.get("mode") == "personalized" and
+                    "recommendations" in data and
+                    isinstance(data["recommendations"], list)
+                )
+                if success:
+                    # Verify all recommendations are within budget ($15 max)
+                    for rec in data["recommendations"]:
+                        lot_price = rec["lot"].get("price", 0)
+                        if lot_price > 15:
+                            success = False
+                            print(f"   Found over-budget lot: ${lot_price}")
+                            break
+                    if success:
+                        print(f"   All {len(data['recommendations'])} recommendations within $15 budget")
+            self.log_test("Recommendations (Budget Filter)", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Recommendations (Budget Filter)", False, str(e))
+            return False
+
+    def test_recommendations_scoring_order(self):
+        """Test that recommendations are sorted by score descending"""
+        try:
+            # Ensure quiz profile exists first
+            self.test_submit_quiz()
+            
+            payload = {
+                "session_id": self.session_id,
+                "limit": 6
+            }
+            response = requests.post(
+                f"{self.base_url}/api/recommendations",
+                json=payload,
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                if data.get("mode") == "personalized" and "recommendations" in data:
+                    recommendations = data["recommendations"]
+                    if len(recommendations) > 1:
+                        # Verify scores are in descending order
+                        scores = [rec.get("score", 0) for rec in recommendations if rec.get("score") is not None]
+                        success = scores == sorted(scores, reverse=True)
+                        if success:
+                            print(f"   Recommendation scores in order: {scores}")
+                        else:
+                            print(f"   Scores not properly sorted: {scores}")
+                    else:
+                        success = True  # Single recommendation is trivially sorted
+                else:
+                    success = False
+            self.log_test("Recommendations (Score Ordering)", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Recommendations (Score Ordering)", False, str(e))
+            return False
+
+    # ============================================================
+    # NEW: LOT ENDPOINTS TESTS
+    # ============================================================
+
+    def test_get_all_lots(self):
+        """Test getting all published lots"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/api/lots",
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (
+                    "lots" in data and
+                    isinstance(data["lots"], list) and
+                    len(data["lots"]) == 6  # Should have 6 seeded lots
+                )
+                if success:
+                    # Verify lot structure
+                    lot = data["lots"][0]
+                    required_fields = ["lot_id", "title", "producer", "price", "roast_rec", "expected_flavor_tags"]
+                    success = all(field in lot for field in required_fields)
+                    if success:
+                        print(f"   Found {len(data['lots'])} published lots")
+            self.log_test("Get All Lots", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Get All Lots", False, str(e))
+            return False
+
+    def test_get_specific_lot(self):
+        """Test getting specific lot by ID"""
+        try:
+            # Test with known lot ID from seeded data
+            lot_id = "papayo-natural-8001"
+            response = requests.get(
+                f"{self.base_url}/api/lots/{lot_id}",
+                timeout=10
+            )
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                success = (
+                    "lot" in data and
+                    data["lot"]["lot_id"] == lot_id and
+                    "title" in data["lot"] and
+                    "producer" in data["lot"]
+                )
+                if success:
+                    print(f"   Retrieved lot: {data['lot']['title']}")
+            self.log_test("Get Specific Lot", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Get Specific Lot", False, str(e))
+            return False
+
+    def test_get_nonexistent_lot(self):
+        """Test getting non-existent lot"""
+        try:
+            response = requests.get(
+                f"{self.base_url}/api/lots/nonexistent-lot-id",
+                timeout=10
+            )
+            success = response.status_code == 404  # Not found expected
+            self.log_test("Get Non-existent Lot", success, f"Status: {response.status_code}")
+            return success
+        except Exception as e:
+            self.log_test("Get Non-existent Lot", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend tests"""
         print(f"🚀 Starting Unchained Coffee Taste Fit API Tests")
@@ -690,6 +1036,25 @@ class TasteFitAPITester:
         
         # NEW: Collection page specific tests
         self.test_collection_batch_all_products()
+
+        # NEW: Quiz endpoints tests
+        print("\n🧪 Testing Quiz Endpoints...")
+        self.test_submit_quiz()
+        self.test_get_quiz_profile()
+        self.test_quiz_validation()
+
+        # NEW: Recommendations endpoint tests
+        print("\n🎯 Testing Recommendations Engine...")
+        self.test_recommendations_with_quiz()
+        self.test_recommendations_cold_start()
+        self.test_recommendations_budget_filter()
+        self.test_recommendations_scoring_order()
+
+        # NEW: Lot endpoints tests
+        print("\n☕ Testing Lot Endpoints...")
+        self.test_get_all_lots()
+        self.test_get_specific_lot()
+        self.test_get_nonexistent_lot()
 
         # Results
         print("=" * 60)

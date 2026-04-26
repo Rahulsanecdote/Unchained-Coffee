@@ -206,6 +206,8 @@ export default function DemoCollection() {
           </Link>
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <Link to="/demo/collection" className="text-xs text-[#3E2723] font-medium" data-testid="nav-collection">Shop</Link>
+            <Link to="/demo/quiz" className="text-xs text-[#8D6E63] hover:text-[#3E2723] font-medium" data-testid="nav-quiz">Taste Quiz</Link>
+            <Link to="/demo/recommendations" className="text-xs text-[#8D6E63] hover:text-[#3E2723] font-medium" data-testid="nav-recs">For You</Link>
             <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-medium uppercase">Demo</span>
             <Link to="/admin/login" className="text-xs text-[#8D6E63] hover:underline" data-testid="nav-admin">Admin</Link>
           </div>
@@ -243,13 +245,13 @@ export default function DemoCollection() {
                   Direct-trade single-origin Colombian coffees. Each one tells a story of terroir and craft.
                 </p>
                 <Link
-                  to={`/demo/pdp/${allProducts[0]?.handle}`}
+                  to="/demo/quiz"
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2C1810] text-white text-xs font-medium
                     hover:bg-[#3E2723] transition-colors"
                   data-testid="hero-cta"
                 >
                   <SlidersHorizontal size={14} />
-                  Set your taste preferences to unlock personalized matches
+                  Take the Taste Quiz for personalized matches
                 </Link>
               </div>
             </div>

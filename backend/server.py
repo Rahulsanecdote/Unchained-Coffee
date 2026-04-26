@@ -20,6 +20,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 
+from recommendation_engine import (
+    lot_flavor_vector_compute, taste_vector_from_quiz,
+    score_lot_for_consumer, editors_picks_sort_key
+)
+
 MONGO_URL = os.environ.get("MONGO_URL")
 DB_NAME = os.environ.get("DB_NAME")
 JWT_SECRET = os.environ.get("JWT_SECRET")
@@ -52,6 +57,115 @@ async def seed_admin():
         })
 
 
+SEED_LOTS = [
+    {
+        "lot_id": "papayo-natural-8001", "handle": "papayo-natural",
+        "title": "Papayo Natural Process", "producer": "Maria del Pilar Naranjo Giron",
+        "farm": "Los Pinos", "region": "Tolima, Colombia",
+        "process": "natural", "variety": "bourbon", "altitude_m": 1600,
+        "roast_rec": "medium", "price": 30.00,
+        "expected_flavor_tags": ["tropical", "berry", "caramel"],
+        "tasting_notes": ["Golden Berry", "Cantaloupe", "Peach"],
+        "image": "https://unchainedcoffee.com/cdn/shop/files/Papayo_Natural_Process_Maria_del_Pilar_Naranjo.png?v=1770848927&width=800",
+        "quantity_available": 50, "is_published": True,
+        "metadata_completeness": 90, "farmer_payout_recorded": True,
+        "reorder_definite_count": 3, "quantity_pct_remaining": 80,
+        "reviews": [{"rating": 4.5}, {"rating": 4.0}, {"rating": 5.0}],
+        "ideal_for": "Pour Over",
+        "sensory": {"aroma": 7, "flavor": 8, "aftertaste": 7, "acidity": 6, "sweetness": 8, "mouthfeel": 7},
+    },
+    {
+        "lot_id": "geisha-honey-8002", "handle": "geisha-honey",
+        "title": "Geisha Honey Process", "producer": "Maria del Pilar Naranjo Giron",
+        "farm": "Los Pinos", "region": "Tolima, Colombia",
+        "process": "honey", "variety": "geisha", "altitude_m": 1600,
+        "roast_rec": "light-medium", "price": 35.00,
+        "expected_flavor_tags": ["floral", "tropical", "citrus", "tea-like"],
+        "tasting_notes": ["Lemongrass", "Pineapple", "Starfruit"],
+        "image": "https://unchainedcoffee.com/cdn/shop/files/Geisha_Honey_Process_Maria_del_Pilar_Naranjo.png?v=1770849019&width=800",
+        "quantity_available": 30, "is_published": True,
+        "metadata_completeness": 95, "farmer_payout_recorded": True,
+        "reorder_definite_count": 5, "quantity_pct_remaining": 60,
+        "reviews": [{"rating": 5.0}, {"rating": 4.8}, {"rating": 4.5}, {"rating": 5.0}],
+        "ideal_for": "Pour Over",
+        "sensory": {"aroma": 8, "flavor": 9, "aftertaste": 8, "acidity": 7, "sweetness": 8, "mouthfeel": 6},
+    },
+    {
+        "lot_id": "red-bourbon-8003", "handle": "red-bourbon-semi-washed",
+        "title": "Red Bourbon Semi-Washed", "producer": "Maria del Pilar Naranjo Giron",
+        "farm": "Los Pinos", "region": "Tolima, Colombia",
+        "process": "semi-washed", "variety": "bourbon", "altitude_m": 1600,
+        "roast_rec": "medium", "price": 25.00,
+        "expected_flavor_tags": ["berry", "chocolate", "caramel"],
+        "tasting_notes": ["Red Fruits", "White Chocolate", "Caramel"],
+        "image": "https://unchainedcoffee.com/cdn/shop/files/Red_Bourbon_Semi_Washed_Maria_del_Pilar_Naranjo.png?v=1770849552&width=800",
+        "quantity_available": 70, "is_published": True,
+        "metadata_completeness": 85, "farmer_payout_recorded": True,
+        "reorder_definite_count": 2, "quantity_pct_remaining": 90,
+        "reviews": [{"rating": 4.2}, {"rating": 4.0}, {"rating": 3.8}],
+        "ideal_for": "Espresso",
+        "sensory": {"aroma": 7, "flavor": 7, "aftertaste": 7, "acidity": 5, "sweetness": 7, "mouthfeel": 8},
+    },
+    {
+        "lot_id": "caturra-washed-8004", "handle": "caturra-washed",
+        "title": "Caturra Washed", "producer": "Carlos Eduardo Meza",
+        "farm": "El Mirador", "region": "Huila, Colombia",
+        "process": "washed", "variety": "caturra", "altitude_m": 1850,
+        "roast_rec": "light", "price": 28.00,
+        "expected_flavor_tags": ["floral", "citrus", "tea-like"],
+        "tasting_notes": ["Green Apple", "Jasmine", "Honey"],
+        "image": "https://unchainedcoffee.com/cdn/shop/files/Papayo_Natural_Process_Maria_del_Pilar_Naranjo.png?v=1770848927&width=800",
+        "quantity_available": 40, "is_published": True,
+        "metadata_completeness": 80, "farmer_payout_recorded": True,
+        "reorder_definite_count": 1, "quantity_pct_remaining": 70,
+        "reviews": [{"rating": 4.3}, {"rating": 4.5}],
+        "ideal_for": "Pour Over",
+        "sensory": {"aroma": 8, "flavor": 7, "aftertaste": 6, "acidity": 8, "sweetness": 6, "mouthfeel": 5},
+    },
+    {
+        "lot_id": "tabi-anaerobic-8005", "handle": "tabi-anaerobic",
+        "title": "Tabi Anaerobic Fermentation", "producer": "Luz Marina Torres",
+        "farm": "La Esperanza", "region": "Narino, Colombia",
+        "process": "anaerobic natural", "variety": "tabi", "altitude_m": 2100,
+        "roast_rec": "medium-light", "price": 42.00,
+        "expected_flavor_tags": ["berry", "chocolate", "funky", "spicy"],
+        "tasting_notes": ["Blueberry", "Wine", "Dark Chocolate"],
+        "image": "https://unchainedcoffee.com/cdn/shop/files/Geisha_Honey_Process_Maria_del_Pilar_Naranjo.png?v=1770849019&width=800",
+        "quantity_available": 20, "is_published": True,
+        "metadata_completeness": 75, "farmer_payout_recorded": False,
+        "reorder_definite_count": 1, "quantity_pct_remaining": 40,
+        "reviews": [{"rating": 4.7}, {"rating": 5.0}, {"rating": 4.2}],
+        "ideal_for": "Pour Over",
+        "sensory": {"aroma": 9, "flavor": 9, "aftertaste": 8, "acidity": 5, "sweetness": 7, "mouthfeel": 8},
+    },
+    {
+        "lot_id": "castillo-dark-8006", "handle": "castillo-dark",
+        "title": "Castillo Dark Roast", "producer": "Familia Ospina",
+        "farm": "San Rafael", "region": "Quindio, Colombia",
+        "process": "washed", "variety": "castillo", "altitude_m": 1450,
+        "roast_rec": "dark", "price": 22.00,
+        "expected_flavor_tags": ["chocolate", "nutty", "caramel"],
+        "tasting_notes": ["Dark Chocolate", "Brown Sugar", "Walnut"],
+        "image": "https://unchainedcoffee.com/cdn/shop/files/Red_Bourbon_Semi_Washed_Maria_del_Pilar_Naranjo.png?v=1770849552&width=800",
+        "quantity_available": 100, "is_published": True,
+        "metadata_completeness": 70, "farmer_payout_recorded": True,
+        "reorder_definite_count": 4, "quantity_pct_remaining": 95,
+        "reviews": [{"rating": 3.8}, {"rating": 4.0}, {"rating": 4.2}],
+        "ideal_for": "Espresso",
+        "sensory": {"aroma": 6, "flavor": 6, "aftertaste": 8, "acidity": 3, "sweetness": 5, "mouthfeel": 9},
+    },
+]
+
+
+async def seed_lots():
+    for lot in SEED_LOTS:
+        existing = await db.lots.find_one({"lot_id": lot["lot_id"]})
+        if not existing:
+            await db.lots.insert_one({**lot, "created_at": datetime.now(timezone.utc).isoformat()})
+        else:
+            await db.lots.update_one({"lot_id": lot["lot_id"]}, {"$set": lot})
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global client, db
@@ -66,7 +180,11 @@ async def lifespan(app: FastAPI):
     await db.product_affective_responses.create_index([("product_id", 1), ("created_at", 1)])
     await db.product_affective_responses.create_index([("session_id", 1), ("created_at", 1)])
     await db.product_affective_responses.create_index([("consumer_id", 1), ("created_at", 1)])
+    await db.lots.create_index("lot_id", unique=True, sparse=True)
+    await db.lots.create_index("is_published")
+    await db.consumer_quiz_profiles.create_index("session_id", unique=True, sparse=True)
     await seed_admin()
+    await seed_lots()
     yield
     client.close()
 
@@ -161,6 +279,40 @@ class TasteFitScoreBody(BaseModel):
 class TasteFitBatchBody(BaseModel):
     session_id: str
     products: List[dict]
+
+
+class QuizBody(BaseModel):
+    session_id: str
+    consumer_id: Optional[str] = None
+    acidity_pref: float = Field(ge=1, le=5)
+    bitterness_pref: float = Field(ge=1, le=5)
+    body_pref: str
+    roast_pref: str
+    budget_band: str
+    brew_methods: List[str] = []
+    drink_style: str = "black"
+    flavor_love_tags: List[str] = []
+    consent_analytics: bool = True
+    consent_marketing: bool = False
+
+    @field_validator("body_pref")
+    @classmethod
+    def validate_body(cls, v):
+        if v not in ("light", "tea-like", "balanced", "thick", "creamy"):
+            raise ValueError("body_pref must be light/tea-like/balanced/thick/creamy")
+        return v
+
+    @field_validator("budget_band")
+    @classmethod
+    def validate_budget(cls, v):
+        if v not in ("under_15", "15_20", "20_30", "30_plus"):
+            raise ValueError("budget_band must be under_15/15_20/20_30/30_plus")
+        return v
+
+
+class RecommendationRequest(BaseModel):
+    session_id: str
+    limit: int = Field(6, ge=1, le=20)
 
 
 # --- Helpers ---
@@ -694,3 +846,153 @@ async def admin_delete_data(
             "events": event_result.deleted_count
         }
     }
+
+
+# ============================================================
+# PUBLIC: TASTE QUIZ
+# ============================================================
+
+@app.post("/api/quiz/submit")
+async def submit_quiz(body: QuizBody):
+    if not check_rate_limit(f"quiz:{body.session_id}"):
+        raise HTTPException(429, "Rate limit exceeded")
+
+    now = datetime.now(timezone.utc).isoformat()
+    quiz_data = {
+        "session_id": body.session_id,
+        "consumer_id": body.consumer_id,
+        "acidity_pref": body.acidity_pref,
+        "bitterness_pref": body.bitterness_pref,
+        "body_pref": body.body_pref,
+        "roast_pref": body.roast_pref,
+        "budget_band": body.budget_band,
+        "brew_methods": body.brew_methods,
+        "drink_style": body.drink_style,
+        "flavor_love_tags": body.flavor_love_tags,
+        "consent_analytics": body.consent_analytics,
+        "consent_marketing": body.consent_marketing,
+        "updated_at": now,
+    }
+
+    await db.consumer_quiz_profiles.update_one(
+        {"session_id": body.session_id},
+        {"$set": quiz_data, "$setOnInsert": {"quiz_id": str(uuid.uuid4())}},
+        upsert=True
+    )
+
+    await emit_event("quiz_submitted", body.session_id,
+                     consumer_id=body.consumer_id,
+                     metadata={"roast_pref": body.roast_pref, "budget_band": body.budget_band,
+                               "tag_count": len(body.flavor_love_tags)})
+
+    return {"status": "ok"}
+
+
+@app.get("/api/quiz/profile")
+async def get_quiz_profile(session_id: str = Query(...)):
+    profile = await db.consumer_quiz_profiles.find_one(
+        {"session_id": session_id}, {"_id": 0}
+    )
+    if not profile:
+        return {"profile": None}
+    return {"profile": profile}
+
+
+# ============================================================
+# PUBLIC: RECOMMENDATIONS
+# ============================================================
+
+@app.post("/api/recommendations")
+async def get_recommendations(body: RecommendationRequest):
+    # Fetch quiz profile
+    quiz = await db.consumer_quiz_profiles.find_one(
+        {"session_id": body.session_id}, {"_id": 0}
+    )
+
+    # Fetch all published lots
+    lots = await db.lots.find({"is_published": True}, {"_id": 0}).to_list(500)
+
+    if not quiz:
+        # Cold start: editor's picks
+        lots.sort(key=editors_picks_sort_key)
+        picks = lots[:body.limit]
+        return {
+            "mode": "editors_picks",
+            "model_version": "rules_v1",
+            "recommendations": [
+                {
+                    "lot": _lot_public(lot),
+                    "score": None,
+                    "explanation": ["A top-rated coffee from our collection"],
+                    "components": None,
+                }
+                for lot in picks
+            ],
+            "quiz_completed": False,
+        }
+
+    # Full scoring
+    consumer_vector = taste_vector_from_quiz(quiz)
+    scored = []
+    for lot in lots:
+        result = score_lot_for_consumer(lot, consumer_vector)
+        if result["eligible"]:
+            scored.append({"lot": lot, **result})
+
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    top = scored[:body.limit]
+
+    return {
+        "mode": "personalized",
+        "model_version": "rules_v1",
+        "recommendations": [
+            {
+                "lot": _lot_public(item["lot"]),
+                "score": item["score"],
+                "explanation": item["explanation"],
+                "components": item["components"] if quiz.get("consent_analytics") else None,
+            }
+            for item in top
+        ],
+        "quiz_completed": True,
+    }
+
+
+def _lot_public(lot):
+    """Strip internal fields for public API response."""
+    return {
+        "lot_id": lot.get("lot_id"),
+        "handle": lot.get("handle"),
+        "title": lot.get("title"),
+        "producer": lot.get("producer"),
+        "farm": lot.get("farm"),
+        "region": lot.get("region"),
+        "process": lot.get("process"),
+        "variety": lot.get("variety"),
+        "altitude_m": lot.get("altitude_m"),
+        "roast_rec": lot.get("roast_rec"),
+        "price": lot.get("price"),
+        "image": lot.get("image"),
+        "tasting_notes": lot.get("tasting_notes", []),
+        "expected_flavor_tags": lot.get("expected_flavor_tags", []),
+        "ideal_for": lot.get("ideal_for"),
+        "sensory": lot.get("sensory"),
+    }
+
+
+# ============================================================
+# PUBLIC: LOT DETAILS
+# ============================================================
+
+@app.get("/api/lots")
+async def list_lots():
+    lots = await db.lots.find({"is_published": True}, {"_id": 0}).to_list(500)
+    return {"lots": [_lot_public(lot) for lot in lots]}
+
+
+@app.get("/api/lots/{lot_id}")
+async def get_lot(lot_id: str):
+    lot = await db.lots.find_one({"lot_id": lot_id}, {"_id": 0})
+    if not lot:
+        raise HTTPException(404, "Lot not found")
+    return {"lot": _lot_public(lot)}

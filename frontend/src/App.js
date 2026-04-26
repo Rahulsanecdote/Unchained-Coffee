@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DemoCollection from './pages/DemoCollection';
 import DemoPDP from './pages/DemoPDP';
+import TasteQuiz from './pages/TasteQuiz';
+import Recommendations from './pages/Recommendations';
 import AdminLogin from './pages/AdminLogin';
 import AdminProducts from './pages/AdminProducts';
 import AdminProductDetail from './pages/AdminProductDetail';
@@ -16,6 +18,8 @@ function App() {
         <Route path="/" element={<Navigate to="/demo/collection" replace />} />
         <Route path="/demo/collection" element={<DemoCollection />} />
         <Route path="/demo/pdp/:productHandle" element={<DemoPDP />} />
+        <Route path="/demo/quiz" element={<TasteQuiz />} />
+        <Route path="/demo/recommendations" element={<Recommendations />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Navigate to="/admin/products" replace />} />
         <Route path="/admin/products" element={<AdminProducts />} />
