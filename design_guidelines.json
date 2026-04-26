@@ -1,0 +1,130 @@
+{
+  "identity": {
+    "brand_name": "Unchained Coffee",
+    "core_values": ["Direct Trade", "Artisanal", "Freedom/Break Chains", "Intimacy"],
+    "archetype": "Organic & Earthy",
+    "tone": "Warm, Serious about Coffee, Premium, Sensory"
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Fraunces, serif",
+      "weights": ["300", "600", "700"],
+      "usage": "Use for all major headings in the Widget and PDP. Adds the 'specialty coffee' character."
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "usage": "Use for all body text, UI elements, and Admin dashboard data."
+    },
+    "mono": {
+      "font_family": "JetBrains Mono, monospace",
+      "usage": "Use for technical details (roast dates, batch numbers) or small labels."
+    }
+  },
+  "colors": {
+    "widget_theme": {
+      "description": "Dark, earthy, warm. Mimics the atmosphere of a dimly lit high-end roastery.",
+      "palette": {
+        "background": "#2C1810",
+        "surface": "#3E2723",
+        "surface_highlight": "#4E342E",
+        "text_primary": "#EFEBE9",
+        "text_secondary": "#D7CCC8",
+        "accent": "#FFB74D",
+        "error": "#EF5350",
+        "success": "#66BB6A",
+        "scale_gradient_start": "#5D4037",
+        "scale_gradient_end": "#D7CCC8"
+      }
+    },
+    "admin_theme": {
+      "description": "Clean, high-contrast Swiss style. Optimized for data density.",
+      "palette": {
+        "background": "#F8FAFC",
+        "surface": "#FFFFFF",
+        "border": "#E2E8F0",
+        "text_primary": "#0F172A",
+        "text_secondary": "#64748B",
+        "primary_action": "#3E2723",
+        "chart_1": "#3E2723",
+        "chart_2": "#8D6E63",
+        "chart_3": "#D7CCC8",
+        "chart_4": "#FFB74D",
+        "chart_5": "#EF5350"
+      }
+    }
+  },
+  "layout_strategy": {
+    "widget": {
+      "desktop": "Right-side fixed panel or slide-over (width: 400px).",
+      "mobile": "Sticky bottom button triggering a Bottom Drawer (Height: 85vh).",
+      "pdp_demo": "Split layout. Left: Product Image (Sticky). Right: Product Details + Widget trigger.",
+      "spacing": "Generous padding (p-6, p-8) inside the widget to feel premium."
+    },
+    "admin": {
+      "structure": "Sidebar Navigation (Left, Fixed) + Main Content Area (Fluid).",
+      "grid": "Dense Grid (Mode B). Use grid-cols-12 for analytics views.",
+      "card_style": "Flat, 1px border (border-slate-200), no shadow or very subtle shadow-sm."
+    }
+  },
+  "components": {
+    "affective_scale_1_9": {
+      "description": "A 9-grid square layout for touch input.",
+      "interaction": "Tap to select. Selected state fills the square. Hover effect on desktop.",
+      "visuals": "Grid gap-1 or gap-2. Squares should be rounded-sm or rounded-md."
+    },
+    "chips": {
+      "style": "Pill shaped. Unselected: Border only. Selected: Filled with Accent/Primary color.",
+      "usage": "Flavor notes, fit issues."
+    },
+    "buttons": {
+      "primary": "Solid background (Brand Brown or Accent). Sharp or slightly rounded corners (rounded-md).",
+      "secondary": "Outline border. Text color matches border.",
+      "ghost": "Text only, hover background."
+    },
+    "charts": {
+      "library": "Recharts (via Shadcn)",
+      "style": "Minimalist. Hide grid lines where possible. Use tooltips for data.",
+      "accessibility": "Ensure color contrast for data series."
+    }
+  },
+  "motion": {
+    "transitions": "transition-all duration-300 ease-out",
+    "drawer": "Slide up from bottom (Spring physics if possible, or cubic-bezier).",
+    "hover": "Translate-y-1 + Opacity change."
+  },
+  "image_assets": {
+    "textures": [
+      {
+        "url": "https://images.unsplash.com/photo-1537088054969-ca47ad5d1af4",
+        "category": "texture",
+        "description": "Dark roasted coffee beans texture. Use for Widget Background or Hero overlay."
+      }
+    ],
+    "context": [
+      {
+        "url": "https://images.unsplash.com/photo-1717990379468-464c928bb242",
+        "category": "brewing",
+        "description": "Coffee pot on stove. Warm, artisanal vibe."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1704866524828-456c33fc7411",
+        "category": "consumption",
+        "description": "Coffee cup on wooden table. Clean and relatable."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' for icons.",
+    "Install 'recharts' for Admin charts.",
+    "Install 'clsx' and 'tailwind-merge' for class handling.",
+    "Use 'Fraunces' font from Google Fonts for headings if possible, otherwise fallback to a nice Serif.",
+    "Implement the 1-9 scale as a custom component, do not use a slider.",
+    "Ensure the Admin dashboard is high-density and information-rich (Swiss Style).",
+    "The Widget must feel 'Dark & Moody' (Earthy Archetype) to contrast with the clean Admin."
+  ],
+  "UNIVERSAL_GUIDELINES": {
+    "design_philosophy": "Fusion over Imitation. Mix Swiss Grid precision with Organic Coffee textures.",
+    "interaction": "Micro-interactions are mandatory. Every tap on the 1-9 scale should feel responsive.",
+    "accessibility": "Ensure text contrast on the dark widget background is at least 4.5:1."
+  }
+}

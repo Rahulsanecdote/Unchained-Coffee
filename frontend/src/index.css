@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --w-bg: #2C1810;
+  --w-surface: #3E2723;
+  --w-surface-hl: #4E342E;
+  --w-text: #EFEBE9;
+  --w-text-sec: #D7CCC8;
+  --w-accent: #FFB74D;
+  --w-error: #EF5350;
+  --w-success: #66BB6A;
+  --w-scale-start: #5D4037;
+  --w-scale-end: #D7CCC8;
+
+  --a-bg: #F8FAFC;
+  --a-surface: #FFFFFF;
+  --a-border: #E2E8F0;
+  --a-text: #0F172A;
+  --a-text-sec: #64748B;
+  --a-primary: #3E2723;
+  --a-chart-1: #3E2723;
+  --a-chart-2: #8D6E63;
+  --a-chart-3: #D7CCC8;
+  --a-chart-4: #FFB74D;
+  --a-chart-5: #EF5350;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-heading {
+  font-family: 'Fraunces', serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
